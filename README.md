@@ -147,3 +147,35 @@ if __name__ == \"__main__\":
 ## Limitações
 
 Este método se baseia na presença de símbolos dinâmicos. Para binários *completamente stripados* (onde até mesmo os símbolos dinâmicos foram removidos), a recuperação de nomes de funções é significativamente mais difícil e exigiria técnicas avançadas de engenharia reversa, como análise de assinaturas de funções, análise de fluxo de controle e inferência de tipos, geralmente realizadas com ferramentas como Ghidra, IDA Pro ou radare2.
+
+## Extração de Pseudo-C (Descompilação)
+
+Além da extração de nomes de funções, este workflow agora inclui suporte para descompilação de funções específicas para pseudo-código C utilizando o plugin `r2dec` do `radare2`.
+
+### Ferramentas Adicionais
+- **`radare2`**: Framework de engenharia reversa.
+- **`r2dec`**: Plugin de descompilação para radare2.
+
+### Execução da Descompilação
+O script `decompile_functions.py` automatiza a análise e descompilação das funções encontradas. Para evitar tempos de execução excessivos, ele está configurado para descompilar as primeiras 20 funções de cada arquivo `.so`.
+
+```bash
+python3 decompile_functions.py
+```
+
+Os resultados são salvos no diretório `decompiled/` como arquivos `.c`.
+
+### Exemplo de Pseudo-C Gerado
+```c
+/* r2dec pseudo code output */
+void CK_calloc (int64_t arg_10h) {
+    // ... lógica de alocação de memória ...
+    if (x0 != 0) {
+        x19 = x0 + 8;
+        memset (x0, w1, x2);
+    } else {
+        rsym_ZN3Cki6Logger6writefE9CkLogTypePKcz ();
+    }
+    return;
+}
+```
