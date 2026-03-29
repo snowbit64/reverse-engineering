@@ -1,0 +1,58 @@
+name: Extract Functions and Decompile to Pseudo-C
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  extract-and-decompile:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Necessário para o git push subsequente
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y binutils git curl build-essential psmisc nodejs
+        # Instalar radare2 de uma PPA ou fonte se apt padrão não funcionar
+        # Para simplificar no GA, vamos tentar instalar via apt, se falhar, precisaria de um passo mais complexo
+        sudo apt-get install -y radare2 || (git clone https://github.com/radareorg/radare2.git /tmp/radare2 && cd /tmp/radare2 && sudo ./sys/install.sh)
+        sudo apt-get install -y ninja-build
+        sudo pip3 install meson
+
+    - name: Install r2dec (radare2 decompiler plugin)
+      run: |
+        # Inicializar e atualizar r2pm
+        r2pm -U
+        # Instalar r2dec
+        r2pm -i r2dec
+        # Verificar se r2dec está carregado
+        r2 -L | grep r2dec
+
+    - name: Run function extraction script
+      run: python3 extract_functions.py
+
+    - name: Run decompilation script
+      run: python3 decompile_functions.py
+
+    - name: Commit and push changes
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add output/ decompiled/ extracted_functions.txt
+        git commit -m "[GitHub Actions] Automatic function extraction and decompilation" || echo "No changes to commit"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
